@@ -50,13 +50,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['first_name', 'middle_name', 'sur_name', 'id_number']
 
 
-    # def __str__(self):
-    #     return "{} {}".format(self.first_name, self.sur_name)
+    def __str__(self):
+        return "{} {}".format(self.first_name, self.sur_name)
 
 
 # When a user is created, a post_save signal will be emitted by the User model. 
 # A receiver(which is simply a function) will then help us catch this post_save signal and immediately create the token.
 
+class Savings(models.Model):
+    amount = models.IntegerField(blank=False, default=0)
+    user = models.ForeignKey(User, related_name='user', on_delete=models.CASCADE)
+    mode = models.CharField(default='cash', blank=False, max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 @receiver(post_save, sender=User)
 def create_auth_token(sender, instance=None, created=False, **kwargs):

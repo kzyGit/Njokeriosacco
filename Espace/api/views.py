@@ -1,11 +1,13 @@
 from rest_framework import generics
-from .serializers import TokenSerializer, RegistrationSerializer
+from .serializers import TokenSerializer, RegistrationSerializer, savingsSerializer
 from rest_framework.response import Response
 from rest_framework.views import status
 from rest_framework_jwt.settings import api_settings
 from rest_framework.permissions import (IsAdminUser, IsAuthenticated, AllowAny)
-from django.contrib.auth import login, authenticate
-from .models import User
+from django.core.exceptions import ValidationError
+from django.contrib.auth import login, authenticate, logout
+from .models import User, Savings
+from .utils import getUser
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
@@ -64,3 +66,31 @@ class LoginView(generics.CreateAPIView):
         return response
 
 
+def LogoutView(request):
+    return logout(request)
+
+class SavingsView(generics.ListCreateAPIView):
+    queryset = Savings.objects.all()
+    permission_classes = (IsAdminUser, IsAuthenticated)
+    serializer_class = savingsSerializer
+
+    def post(self, request, pk):
+        user = getUser(self, pk)
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=user, amount=request.data.get('amount'))
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def get(self, request, pk):
+        user = getUser(self, pk)
+        savings = Savings.objects.filter(user_id=pk)
+        if not savings:
+            raise ValidationError(detail={'error': 'User with that ID does not have any savings yet'})
+        serializer = self.serializer_class(savings.all(), many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class SavingsDetailsView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = (IsAuthenticated, IsAdminUser, )
+    serializer_class = savingsSerializer
+    queryset = Savings.objects.all()
