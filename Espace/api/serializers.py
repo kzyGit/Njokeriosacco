@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, Savings
 from rest_framework.validators import UniqueValidator
+
 
 class TokenSerializer(serializers.Serializer):
     """
@@ -31,8 +32,27 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'middle_name', 'sur_name', 'email', 'id_number']
+        fields = ['id', 'first_name', 'middle_name',
+            'sur_name', 'email', 'id_number']
 
     def create(self, validated_data):
-        validated_data['password']=validated_data['email']
+        validated_data['password'] = validated_data['email']
         return User.objects.create_user(**validated_data)
+
+
+class savingsSerializer(serializers.ModelSerializer):
+    amount = serializers.IntegerField(required=True)
+    user = serializers.SerializerMethodField(read_only=True)
+
+    def get_user(self, obj):
+        serializer = RegistrationSerializer(
+            instance=User.objects.get(user=obj.id))
+        return serializer.data
+        
+    class Meta:
+        model = Savings
+        fields = [ 'id', 'amount', 'user', 'created_at', 'updated_at']
+        write_only_fields = ['amount']
+
+    def create(self, validated_data):
+        return Savings.objects.create(**validated_data)
