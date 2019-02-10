@@ -3,23 +3,24 @@ from .serializers import TokenSerializer, RegistrationSerializer, savingsSeriali
 from rest_framework.response import Response
 from rest_framework.views import status
 from rest_framework_jwt.settings import api_settings
-from rest_framework.permissions import (IsAdminUser, IsAuthenticated, AllowAny)
+from rest_framework.permissions import (IsAdminUser, IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly)
+from .permissions import (isOwnerOrAdmin)
 from django.core.exceptions import ValidationError
 from django.contrib.auth import login, authenticate, logout
 from .models import User, Savings
-from .utils import getUser
+from .utils import getUser, isAdmin, OwnerOrAdmin
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
 
 class Users(generics.ListCreateAPIView):
     queryset = User.objects.all()
-    permission_classes = (IsAdminUser,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
     serializer_class = RegistrationSerializer
 
     def post(self, request, *args, **kwargs):
+        isAdmin(self, request.user)
         user = request.data
-        
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -33,7 +34,7 @@ class Users(generics.ListCreateAPIView):
 class UserDetailsView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class=RegistrationSerializer
-    permission_classes=(IsAuthenticated, IsAdminUser,)
+    permission_classes=(IsAdminUser,)
 
 
 class LoginView(generics.CreateAPIView):
@@ -71,10 +72,11 @@ def LogoutView(request):
 
 class SavingsView(generics.ListCreateAPIView):
     queryset = Savings.objects.all()
-    permission_classes = (IsAdminUser, IsAuthenticated)
+    permission_classes = (IsAuthenticated,)
     serializer_class = savingsSerializer
 
     def post(self, request, pk):
+        isAdmin(self, request.user)
         user = getUser(self, pk)
         serializer = self.serializer_class(data=request.data, context={'request': request})
         
@@ -84,13 +86,15 @@ class SavingsView(generics.ListCreateAPIView):
 
     def get(self, request, pk):
         user = getUser(self, pk)
-        savings = Savings.objects.filter(user_id=pk)
+        OwnerOrAdmin(self, request.user, pk)
+        savings = Savings.objects.filter(user_id=pk)        
         if not savings:
-            raise ValidationError(detail={'error': 'User with that ID does not have any savings yet'})
-        serializer = self.serializer_class(savings.all(), many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response({'error': 'User with that ID does not have any savings yet'})
+        else:
+            serializer = self.serializer_class(savings.all(), many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 class SavingsDetailsView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = (IsAuthenticated, IsAdminUser, )
+    permission_classes = (IsAuthenticated, isOwnerOrAdmin, )
     serializer_class = savingsSerializer
     queryset = Savings.objects.all()

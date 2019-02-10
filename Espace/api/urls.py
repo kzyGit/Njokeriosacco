@@ -1,17 +1,7 @@
 from rest_framework_jwt.views import obtain_jwt_token
 from django.conf.urls import url, include
 from django.contrib import admin
-<<<<<<< HEAD
-<<<<<<< HEAD
-from .views import LoginView, Users, UserDetailsView
-
-from rest_framework_jwt.views import obtain_jwt_token
-=======
 from .views import LoginView, Users, UserDetailsView, LogoutView, SavingsView, SavingsDetailsView
->>>>>>> 469ce0e... feat(savings): Add user savings crud
-=======
-from .views import LoginView, Users, UserDetailsView, LogoutView
->>>>>>> c756456... Configure application to use postgres
 
 urlpatterns = [
     url(r'^login/', LoginView.as_view(), name="login"),
