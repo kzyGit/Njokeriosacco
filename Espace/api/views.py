@@ -11,14 +11,9 @@ from django.contrib.auth import login, authenticate, logout
 from .models import User, Savings, Loans, LoanRepayment
 from .utils import getUser, isAdmin, OwnerOrAdmin, sendMailThread
 from django.db.models import Sum
-from django.http import HttpResponse
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
-
-
-def Homepage(request):
-    return HttpResponse("Njokeriosacco Homepage")
 
 
 class Users(generics.ListCreateAPIView):

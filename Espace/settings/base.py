@@ -110,7 +110,10 @@ WSGI_APPLICATION = 'Espace.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'sacco'
+        'NAME': os.getenv('DATABASE_NAME'),
+        'HOST': 'localhost',
+        'PORT': 5432,
+        'USER': 'postgres'
     }
 }
 

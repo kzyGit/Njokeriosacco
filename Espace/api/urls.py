@@ -2,10 +2,9 @@ from rest_framework_jwt.views import obtain_jwt_token
 from django.conf.urls import url
 from .views import (LoginView, Users, UserDetailsView, LogoutView, SavingsView,
                     SavingsDetailsView, LoansApiView, LoansDetailsView,
-                    LoansRepaymentsView, LoansRepaymentsDetailsView, Homepage)
+                    LoansRepaymentsView, LoansRepaymentsDetailsView)
 
 urlpatterns = [
-    url(r'^home/', Homepage, name="home"),
     url(r'^login/', LoginView.as_view(), name="login"),
     url(r'^logout/', LogoutView, name="logout"),
     url(r'^users/', Users.as_view(), name="auth-register"),
