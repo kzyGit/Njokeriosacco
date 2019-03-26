@@ -110,7 +110,7 @@ WSGI_APPLICATION = 'Espace.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.getenv('DATABASE_NAME'),
+        'NAME': 'sacco',
         'HOST': 'localhost',
         'PORT': 5432,
         'USER': 'postgres'
@@ -157,10 +157,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 AUTH_USER_MODEL = 'api.User'
-<<<<<<< HEAD:Espace/settings/base.py
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-=======
->>>>>>> feat(loans) Add loans crud:Espace/Base/settings.py
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
