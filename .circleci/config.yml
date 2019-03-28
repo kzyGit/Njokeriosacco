@@ -7,20 +7,24 @@ jobs:
           TERM: xterm-256color
       - image: circleci/postgres:9.6.2
     working_directory: ~/Njokeriosacco
+    filters:
+      branches:
+        only:
+          - ch-deploy-to-aws
+                
     steps: 
       - checkout # checkout code to working directory
       - setup_remote_docker
-      - run
-        command: |
-          python3 -m venv venv
-            . venv/bin/activate
-          pip install -r requirements.txt
-      - run
-        name: Run tests
-        command: |
-          pytest
+      - run:
+          command: |
+            python3 -m venv venv
+              . venv/bin/activate
+            pip install -r requirements.txt
+      - run:
+          name: Run tests
+          command: pytest
       - store_test_results: # Upload test results for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
-        path: test-results
+          path: test-results
       - store_artifacts: # Upload test summary for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
-        path: test-results
-        destination: tr1
+          path: test-results
+          destination: tr1
