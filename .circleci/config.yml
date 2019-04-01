@@ -1,0 +1,62 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6.4
+        environment:
+          TERM: xterm-256color
+      - image: circleci/postgres:9.6.2
+    working_directory: ~/Base
+    steps: 
+      - checkout # checkout code to working directory
+      - setup_remote_docker
+      - run:
+          command: |
+            pip3 install virtualenv
+            virtualenv -p python3 venv
+            . venv/bin/activate
+            pip3 install django
+            pip install django
+            pip install -r requirements.txt
+      - run:
+          name: Run tests
+          command: |
+            . venv/bin/activate
+            pip3 install django
+            pip install django
+            python manage.py makemigrations
+            make test
+
+  deploy:
+    docker:
+      - image: circleci/python:3.6.4
+        environment:
+          TERM: xterm-256color
+      - image: circleci/postgres:9.6.2
+    working_directory: ~/Base
+    steps: 
+      - checkout # checkout code to working directory
+      - setup_remote_docker
+      - run:
+          command: |
+            pip3 install virtualenv
+            virtualenv -p python3 venv
+            . venv/bin/activate
+            pip3 install django
+            pip install django
+            pip install -r requirements.txt
+      - run:
+          name: Run tests
+          command: |
+            . venv/bin/activate
+            pip3 install django
+            pip install django
+            createdb sacco
+            python manage.py makemigrations
+            python manage.py test Espace/api/tests
+      - run:
+          name: Make a build
+          command: make build
+      - run:
+          name: Release application docker image
+          command: make release
