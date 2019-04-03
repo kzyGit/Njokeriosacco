@@ -9,7 +9,7 @@ from rest_framework.permissions import (IsAuthenticated, AllowAny,)
 from .permissions import (isOwnerOrAdmin, IsAdminUserOrReadOnly)
 from django.contrib.auth import login, authenticate, logout
 from .models import User, Savings, Loans, LoanRepayment
-from .utils import getUser, isAdmin, OwnerOrAdmin, sendMailThread
+from .utils import getUser, isAdmin, OwnerOrAdmin
 from django.db.models import Sum
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
@@ -27,8 +27,8 @@ class Users(generics.ListCreateAPIView):
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
 
-        email = request.data['email']
-        subject = "Registration"
+        # email = request.data['email']
+        # subject = "Registration"
 
         body = "<h1> Welcome to Njokeriosacco </h1> <p> Hey {}, We are delighted to have you as part of this amazing team</p><br><br> Regards, Njokeriosacco.".format(request.data['first_name'])  # noqa
         serializer.save()

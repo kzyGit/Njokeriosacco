@@ -47,4 +47,3 @@ def OwnerOrAdmin(self, user, pk):
     b = not user.is_staff
     if a and b:
         raise PermissionDenied(forbidden)
-
