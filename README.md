@@ -16,9 +16,6 @@ The API is built using <b>Python Django Rest Framework</b>
 
 3. Docker Containorization
 
-4. CircleCI testing
-
-
 
 <h3>Setting up Njokerio Sacco</h3>
 
@@ -46,29 +43,29 @@ To run the flake8 linter: `make lint`
 
 An admin can:
 
-1. Create and view All users: `POST , GET -> /users/`
+1. Create and view All users: `POST , GET -> /api/v1/users/`
 
-2. View / Delete or update single user: `GET , PUT , DELETE -> /user/(int:id)/`
+2. View / Delete or update single user: `GET , PUT , DELETE -> /api/v1/user/(int:id)/`
 
-3. Add or view Savings: `POST , GET -> /savings/` 
+3. Add or view Savings: `POST , GET -> /api/v1/savings/` 
 
-4. Get single user Savings: `GET -> /savings/(int:id)/` 
+4. Get single user Savings: `GET -> /api/v1/savings/(int:id)/` 
 
-5. View / Delete or Update a single saving: `GET , PUT , DELETE -> /single_saving/(int:id)/`
+5. View / Delete or Update a single saving: `GET , PUT , DELETE -> /api/v1/single_saving/(int:id)/`
 
-6. Issue or View a users loans: `POST , GET -> /loan/` 
+6. Issue or View a users loans: `POST , GET -> /api/v1/loan/` 
 
-7. View / delete / Update a single loan: `GET , PUT , DELETE -> /loan/(int:id)/`
+7. View / delete / Update a single loan: `GET , PUT , DELETE -> /api/v1/loan/(int:id)/`
 
-8. Record and View Loan repayment: `POST , GET -> /repayment/`
+8. Record and View Loan repayment: `POST , GET -> /api/v1/repayment/`
 
 
 A member can:
 
-1. View his profile: `GET -> /user/(int:id)/`
+1. View his profile: `GET -> /api/v1/user/(int:id)/`
 
-2. View own Savings: `GET -> /savings/` 
+2. View own Savings: `GET -> /api/v1/savings/` 
 
-3. View own loans: `GET -> /loan/`
+3. View own loans: `GET -> /api/v1/loan/`
 
-4. View Loan repayment: `GET -> /repayment/`
+4. View Loan repayment: `GET -> /api/v1/repayment/`
