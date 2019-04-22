@@ -111,10 +111,17 @@ WSGI_APPLICATION = 'Espace.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': config('DATABASE_NAME'),
+        'NAME': os.getenv('DATABASE_NAME', 'sacco'),
         'HOST': 'db',
         'PORT': 5432,
         'USER': 'postgres'
+    }
+}
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
     }
 }
 

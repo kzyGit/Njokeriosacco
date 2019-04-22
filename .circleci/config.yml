@@ -8,19 +8,16 @@ jobs:
       - image: circleci/postgres:9.6.2
     working_directory: ~/njokeriosacco
     steps: 
-      - checkout # checkout code to working directory
+      - checkout
       - setup_remote_docker
-      # - run:
-      #     name: Run tests
-      #     command: make test
+      - run:
+          name: Run tests
+          command:
+            cd ..
+            make test
       - run:
           name: Run flake8 linter
-          command: |
-            pip3 install virtualenv
-            virtualenv -p python3 venv
-            . venv/bin/activate
-            pip3 install flake8
-            flake8
+          command: make lint
 
   # deploy:
   #   docker:

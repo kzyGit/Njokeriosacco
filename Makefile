@@ -8,8 +8,17 @@ start:
 
 test:
 	@ echo "Running tests"
-	@ docker-compose run web python manage.py test Espace/api/tests
+	@ docker-compose run web python manage.py test
 
 lint:
 	@ echo "Running flake8 linter"
-	@ flake8
+	@ docker-compose run web flake8
+
+migrate:
+	@ echo "migrate database"
+	@ docker-compose run web python manage.py makemigrations
+	@ docker-compose run web python manage.py migrate
+
+admin:
+	@ echo "Creating admin"
+	@ docker-compose run web python manage.py createsuperuser
