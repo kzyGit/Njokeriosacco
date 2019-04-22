@@ -1,10 +1,4 @@
 from django.db import models
-
-# To aid generation of a token
-from django.db.models.signals import post_save
-from rest_framework.authtoken.models import Token
-from django.dispatch import receiver
-
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 

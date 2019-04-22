@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+from decouple import config
 import datetime
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -110,10 +111,17 @@ WSGI_APPLICATION = 'Espace.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'sacco',
-        'HOST': 'localhost',
+        'NAME': os.getenv('DATABASE_NAME', 'sacco'),
+        'HOST': 'db',
         'PORT': 5432,
         'USER': 'postgres'
+    }
+}
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
     }
 }
 

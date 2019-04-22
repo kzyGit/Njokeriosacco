@@ -9,8 +9,9 @@ from rest_framework.permissions import (IsAuthenticated, AllowAny,)
 from .permissions import (isOwnerOrAdmin, IsAdminUserOrReadOnly)
 from django.contrib.auth import login, authenticate, logout
 from .models import User, Savings, Loans, LoanRepayment
-from .utils import getUser, isAdmin, OwnerOrAdmin, sendMailThread
+from .utils import getUser, isAdmin, OwnerOrAdmin
 from django.db.models import Sum
+from django.core.cache import cache
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
@@ -27,8 +28,8 @@ class Users(generics.ListCreateAPIView):
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
 
-        email = request.data['email']
-        subject = "Registration"
+        # email = request.data['email']
+        # subject = "Registration"
 
         body = "<h1> Welcome to Njokeriosacco </h1> <p> Hey {}, We are delighted to have you as part of this amazing team</p><br><br> Regards, Njokeriosacco.".format(request.data['first_name'])  # noqa
         serializer.save()
@@ -95,6 +96,17 @@ class SavingsView(generics.ListCreateAPIView):
     queryset = Savings.objects.all()
     permission_classes = (IsAdminUserOrReadOnly, )
     serializer_class = savingsSerializer
+
+    def get_savings(self):
+        cached_savings = cache.get('cached_savings')
+
+        # if not cached_savings:
+        #     cache.set('cached_savings', Savings.objects, 60)
+        #     cached_savings = cache.get('cached_savings')
+        #     print("---- Just Cached")
+        # else:
+        #     print("***** Existing Savings Cached")
+        return cached_savings
 
     def post(self, request, pk):
         user = getUser(self, pk)
@@ -265,8 +277,14 @@ class LoansRepaymentsView(generics.ListCreateAPIView):
             response = {'message': 'User has no pending loan'}
         else:
             repayments = LoanRepayment.objects.filter(loan_id=loan.id)
+            total_repayments = repayments.aggregate(Sum('amount'))
             serializer = self.serializer_class(repayments.all(), many=True)
-            response = serializer.data
+            response = {
+                "loan": loan.amount,
+                "total repayments": total_repayments['amount__sum'],
+                "reparment record": serializer.data
+
+            }
         return Response(response, status=status.HTTP_200_OK)
 
 
