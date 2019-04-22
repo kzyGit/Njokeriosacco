@@ -10,7 +10,7 @@ The API is built using <b>Python Django Rest Framework</b>
 
 <h3>Technologies used</h3>
 
-1. Django Rest Framework
+1. Python - Django Rest Framework
 
 2. Postgres Database
 
