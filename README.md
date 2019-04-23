@@ -14,7 +14,7 @@ The API is built using <b>Python Django Rest Framework</b>
 
 2. Postgres Database
 
-3. Docker Containorization
+3. Docker Containerization
 
 
 <h3>Setting up Njokerio Sacco</h3>
