@@ -55,7 +55,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'middle_name', 'sur_name', 'id_number']
+    REQUIRED_FIELDS = ['first_name', 'middle_name', 'sur_name', 'id_number', 'image']
 
     def __str__(self):
         return "{} {}".format(self.first_name, self.sur_name)
@@ -76,14 +76,18 @@ class Savings(CommonFields):
     mode = models.CharField(default='cash', blank=False, max_length=100)
 
 
+class LoanRepayment(CommonFields):
+    amount = models.IntegerField(blank=False, default=0)
+
+    def __str__(self):
+        """Return object's string representation."""
+        return self.amount
+
+
 class Loans(CommonFields):
     amount = models.IntegerField(blank=False, default=0)
     user = models.ForeignKey(
         User, related_name='loaner', on_delete=models.CASCADE)
     status = models.CharField(default='pending', blank=False, max_length=100)
-
-
-class LoanRepayment(CommonFields):
-    amount = models.IntegerField(blank=False, default=0)
-    loan = models.ForeignKey(
-        Loans, related_name='loan', on_delete=models.CASCADE)
+    repayment = models.ManyToManyField(
+        LoanRepayment, related_name='loan', blank=True)
