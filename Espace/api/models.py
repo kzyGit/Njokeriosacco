@@ -1,13 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from cloudinary.models import CloudinaryField
 
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
     def create_user(self, email, password, first_name, middle_name, sur_name,
-                    id_number):
+                    id_number, image):
         if not email:
             raise ValueError('The given email must be set')
         email = self.normalize_email(email)
@@ -15,12 +16,14 @@ class UserManager(BaseUserManager):
         self.middle_name = middle_name
         self.sur_name = sur_name
         self.id_number = id_number
+        self.image = image
         user = self.model(
             email=email,
             first_name=first_name,
             middle_name=middle_name,
             sur_name=sur_name,
-            id_number=id_number)
+            id_number=id_number,
+            image=image)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -31,9 +34,10 @@ class UserManager(BaseUserManager):
                          middle_name,
                          sur_name,
                          id_number,
+                         image,
                          password=None):
         user = self.create_user(email, password, first_name, middle_name,
-                                sur_name, id_number)
+                                sur_name, id_number, image)
         user.is_staff = True
         user.is_admin = True
         user.is_superuser = True
@@ -48,6 +52,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     middle_name = models.CharField(blank=False, max_length=100)
     sur_name = models.CharField(blank=False, max_length=100)
     id_number = models.IntegerField(blank=False, unique=True)
+    image = CloudinaryField('image', default='image_url')
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
@@ -55,7 +60,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'middle_name', 'sur_name', 'id_number']
+    REQUIRED_FIELDS = ['first_name', 'middle_name', 'sur_name', 'id_number', 'image']
 
     def __str__(self):
         return "{} {}".format(self.first_name, self.sur_name)
@@ -76,14 +81,18 @@ class Savings(CommonFields):
     mode = models.CharField(default='cash', blank=False, max_length=100)
 
 
+class LoanRepayment(CommonFields):
+    amount = models.IntegerField(blank=False, default=0)
+
+    def __str__(self):
+        """Return object's string representation."""
+        return self.amount
+
+
 class Loans(CommonFields):
     amount = models.IntegerField(blank=False, default=0)
     user = models.ForeignKey(
         User, related_name='loaner', on_delete=models.CASCADE)
     status = models.CharField(default='pending', blank=False, max_length=100)
-
-
-class LoanRepayment(CommonFields):
-    amount = models.IntegerField(blank=False, default=0)
-    loan = models.ForeignKey(
-        Loans, related_name='loan', on_delete=models.CASCADE)
+    repayment = models.ManyToManyField(
+        LoanRepayment, related_name='loan', blank=True)

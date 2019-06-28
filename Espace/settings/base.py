@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
-from decouple import config
 import datetime
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -26,7 +25,7 @@ SECRET_KEY = 'r-t(!+xq*w^93f5^zxppa5nba^fe=ui244+e%iufv4)j_3-&2='
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -39,7 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'Espace.api',
+    'corsheaders',
     'rest_framework.authtoken',
+    'cloudinary',
 ]
 
 REST_FRAMEWORK = {
@@ -76,6 +77,7 @@ JWT_AUTH = {
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -84,6 +86,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'Espace.urls'
 
@@ -111,10 +116,10 @@ WSGI_APPLICATION = 'Espace.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.getenv('DATABASE_NAME', 'sacco'),
-        'HOST': 'db',
-        'PORT': 5432,
-        'USER': 'postgres'
+        "NAME": "sacco",
+        "HOST": "localhost",
+        "PORT": 5432,
+        "USER": "postgres"
     }
 }
 

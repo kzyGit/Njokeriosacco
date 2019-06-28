@@ -2,7 +2,8 @@ from rest_framework.exceptions import ValidationError, PermissionDenied
 from .models import User
 from django.core.mail import EmailMultiAlternatives
 from threading import Thread
-
+import cloudinary
+import os
 
 class sendMailThread(Thread):
     def __init__(self, subject, body, email):
@@ -17,7 +18,7 @@ class sendMailThread(Thread):
             self.subject,
             text_content,
             'kezzy.angiro@andela.com',
-            ['kezzyangiro@gmail.com', 'kezzy.angiro@andela.com'])
+            ['kezzyangiro@gmail.com'])
         msg.attach_alternative(self.body, "text/html")
         msg.send()
 
@@ -47,3 +48,32 @@ def OwnerOrAdmin(self, user, pk):
     b = not user.is_staff
     if a and b:
         raise PermissionDenied(forbidden)
+
+
+def cloudinary_config():
+    """ Cloudinary configuration settings """
+    return cloudinary.config(
+        cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+        api_key=os.getenv('CLOUDINARY_API_KEY'),
+        api_secret=os.getenv('CLOUDINARY_API_SECRET')
+    )
+
+
+def cloudinary_image_upload(one_file, image_name):
+    """ Uploads an imaged to cloudinary """
+    cloudinary_config()
+    return cloudinary.uploader.upload(
+        one_file,
+        public_id=image_name,
+        crop='limit',
+        width='2000',
+        height='2000',
+        eager=[
+            {'width': 200, 'height': 200,
+             'crop': 'thumb', 'gravity ': 'auto',
+             'radius': 20, 'effect': 'sepia'},
+            {'width': 100, 'height': 150,
+             'crop': 'fit', 'format ': 'png'}
+        ],
+        tags=['image_ad', 'NAPI']
+    )

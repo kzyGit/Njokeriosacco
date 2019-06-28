@@ -1,3 +1,6 @@
+import os
+import uuid
+import boto3
 from rest_framework import generics
 from .serializers import (TokenSerializer, RegistrationSerializer,
                           savingsSerializer, loansSerializer,
@@ -9,12 +12,25 @@ from rest_framework.permissions import (IsAuthenticated, AllowAny,)
 from .permissions import (isOwnerOrAdmin, IsAdminUserOrReadOnly)
 from django.contrib.auth import login, authenticate, logout
 from .models import User, Savings, Loans, LoanRepayment
-from .utils import getUser, isAdmin, OwnerOrAdmin
+from .utils import getUser, isAdmin, OwnerOrAdmin, cloudinary_image_upload, sendMailThread
 from django.db.models import Sum
-from django.core.cache import cache
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+
+file_path = os.path.join(os.path.pardir, 'kitten.jpeg')
+# pylint: disable=no-self-use, unused-argument
+
+
+class Home(generics.ListAPIView):
+    queryset = User.objects.all()
+
+    def get(self, request):
+        data = {
+            "status": "success",
+            "message": "Welcome to the Njokeriosacco api"
+        }
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class Users(generics.ListCreateAPIView):
@@ -25,16 +41,29 @@ class Users(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         isAdmin(self, request.user)
         user = request.data
+        image = request.FILES.get('image')
+        if image:
+            name = image.name.split('.')
+        else:
+            return Response({'message': 'Image not provided'})
+        filename = name[0] + str(uuid.uuid4()) + "." + name[1]
+
+        # s3 storage
+        # s3 = boto3.resource('s3')
+        # s3.Bucket('njokeriosacco').put_object(Key=filename, Body=image)
+
+        # cloudinary
+        upload = cloudinary_image_upload(image, filename)
+        user['image'] = upload['url']
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
-
-        # email = request.data['email']
-        # subject = "Registration"
+        serializer.save()
+        email = request.data['email']
+        subject = "Registration"
 
         body = "<h1> Welcome to Njokeriosacco </h1> <p> Hey {}, We are delighted to have you as part of this amazing team</p><br><br> Regards, Njokeriosacco.".format(request.data['first_name'])  # noqa
-        serializer.save()
         try:
-            # sendMailThread(subject, body, email).start()
+            sendMailThread(subject, body, email).start()
             response = {
                 "message": "User registered successfully",
                 "user_info": serializer.data
@@ -60,6 +89,7 @@ class UserDetailsView(generics.RetrieveUpdateDestroyAPIView):
 class LoginView(generics.CreateAPIView):
     permission_classes = (AllowAny, )
     queryset = User.objects.all()
+    serializer_class = TokenSerializer
 
     def post(self, request, *args, **kwargs):
         username = request.data.get("username", "")
@@ -72,15 +102,17 @@ class LoginView(generics.CreateAPIView):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                serializer = TokenSerializer(
+                serializer = self.serializer_class(
                     data={
                         "token": jwt_encode_handler(jwt_payload_handler(user)),
                     })
 
                 serializer.is_valid()
+                role = 'admin' if user.is_admin else 'user'
                 response = Response({
                     'message': "Logged in successfully",
                     'token': serializer.data['token'],
+                    'role': role
                 })
             else:
                 response = Response({'error': "Invalid login credentials"},
@@ -97,17 +129,6 @@ class SavingsView(generics.ListCreateAPIView):
     permission_classes = (IsAdminUserOrReadOnly, )
     serializer_class = savingsSerializer
 
-    def get_savings(self):
-        cached_savings = cache.get('cached_savings')
-
-        # if not cached_savings:
-        #     cache.set('cached_savings', Savings.objects, 60)
-        #     cached_savings = cache.get('cached_savings')
-        #     print("---- Just Cached")
-        # else:
-        #     print("***** Existing Savings Cached")
-        return cached_savings
-
     def post(self, request, pk):
         user = getUser(self, pk)
         serializer = self.serializer_class(
@@ -122,24 +143,41 @@ class SavingsView(generics.ListCreateAPIView):
         return Response(response, status=status.HTTP_201_CREATED)
 
     def get(self, request, pk=None):
+        admin = request.user.is_admin
         if pk:
-            getUser(self, pk)
-            OwnerOrAdmin(self, request.user, pk)
-            savings = Savings.objects.filter(user_id=pk)
-        else:
             isAdmin(self, request.user)
-            savings = Savings.objects.all()
-        if not savings:
-            return Response(
-                {'error': 'User with that ID does not have any savings yet'})
+            user_savings = Savings.objects.filter(user_id=pk)
+            total = user_savings.aggregate(Sum('amount'))
+            if not user_savings:
+                return Response(
+                    {'error': 'User with that ID does not have any savings yet'})
+            savings = self.serializer_class(user_savings, many=True).data
         else:
-            total = savings.aggregate(Sum('amount'))
-            serializer = self.serializer_class(savings.all(), many=True)
-            data = {
-                'total savings': total['amount__sum'],
-                'data': serializer.data
-            }
-            return Response(data, status=status.HTTP_200_OK)
+            OwnerOrAdmin(self, request.user, request.user.id)
+            if admin:
+                image_list = Savings.objects.order_by('user_id').distinct('user_id')
+
+                savings = []
+
+                for item in image_list:
+                    name = '{} {} {}'.format(item.user.first_name, item.user.middle_name, item.user.sur_name)
+                    one_saving = Savings.objects.filter(user_id=item.user_id)
+                    one_total_saving = one_saving.aggregate(Sum('amount'))
+                    savings.append({
+                        'amount': one_total_saving['amount__sum'],
+                        'user': {'id': item.user.id, 'name': name, 'email': item.user.email}
+                    })
+                total = Savings.objects.all().aggregate(Sum('amount'))
+
+            else:
+                user_savings = Savings.objects.filter(user_id=request.user.id)
+                total = user_savings.aggregate(Sum('amount'))
+                savings = self.serializer_class(user_savings, many=True).data
+        data = {
+            'total_savings': total['amount__sum'],
+            'data': savings
+        }
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class SavingsDetailsView(generics.RetrieveUpdateDestroyAPIView):
@@ -177,20 +215,24 @@ class LoansApiView(generics.ListCreateAPIView):
                 {'error': 'User with that ID already has an active loan'})
 
     def get(self, request, pk=None):
+        admin = request.user.is_admin
         if pk:
-            getUser(self, pk)
-            OwnerOrAdmin(self, request.user, pk)
+            isAdmin(self, request.user)
             loans = Loans.objects.filter(user_id=pk)
         else:
-            isAdmin(self, request.user)
-            loans = Loans.objects.all()
-            total = loans.aggregate(Sum('amount'))
+            OwnerOrAdmin(self, request.user, request.user.id)
+            if admin:
+                loans = Loans.objects.all()
+                total = loans.aggregate(Sum('amount'))
+            else:
+                loans = Loans.objects.filter(user_id=request.user.id)
+
         if not loans:
             return Response(
                 {'error': 'User with that ID does not have any loans yet'})
         else:
             serializer = self.serializer_class(loans.all(), many=True)
-            if not pk:
+            if admin and not pk:
                 data = {
                     'total loans': total['amount__sum'],
                     'data': serializer.data
@@ -234,7 +276,8 @@ class LoansRepaymentsView(generics.ListCreateAPIView):
         if not loan:
             response = {'message': 'User has no pending loan'}
         else:
-            repayments = LoanRepayment.objects.filter(loan_id=loan.id)
+            repayments = loan.repayment.all()
+
             total_repayments = 0
             excess = 0
             message = ''
@@ -243,12 +286,12 @@ class LoansRepaymentsView(generics.ListCreateAPIView):
 
             total = total_repayments + request.data['amount']
 
+
             # check interest rates and modify this
             total_loan = loan.amount * 104/100
 
             if total >= total_loan:
                 loan.status = 'completed'
-                loan.save()
                 excess = total - loan.amount
                 if excess > 0:
                     pass
@@ -257,11 +300,13 @@ class LoansRepaymentsView(generics.ListCreateAPIView):
                     message = ' overpayment added to user savings'
 
             data = request.data.get('amount') - excess
-
             serializer = self.serializer_class(
-                data=request.data, context={'request': request})
+                data={'amount': data}, context={'request': request})
             serializer.is_valid(raise_exception=True)
-            serializer.save(loan=loan, amount=data)
+            serializer.save()
+            loan.repayment.add(serializer.instance)
+            loan.save()
+
             response = {
                 'message': 'Loan repayment successful' + message,
                 'loan_info': serializer.data
@@ -276,13 +321,13 @@ class LoansRepaymentsView(generics.ListCreateAPIView):
         if not loan:
             response = {'message': 'User has no pending loan'}
         else:
-            repayments = LoanRepayment.objects.filter(loan_id=loan.id)
+            repayments = LoanRepayment.objects.filter(loan=loan)
             total_repayments = repayments.aggregate(Sum('amount'))
             serializer = self.serializer_class(repayments.all(), many=True)
             response = {
                 "loan": loan.amount,
-                "total repayments": total_repayments['amount__sum'],
-                "reparment record": serializer.data
+                "total_repayments": total_repayments['amount__sum'],
+                "repayment_record": serializer.data,
 
             }
         return Response(response, status=status.HTTP_200_OK)

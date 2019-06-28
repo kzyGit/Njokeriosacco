@@ -24,7 +24,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'first_name', 'middle_name', 'sur_name', 'email', 'id_number'
+            'id', 'first_name', 'middle_name', 'sur_name', 'email', 'id_number', 'image'
         ]
 
     def create(self, validated_data):
@@ -61,7 +61,7 @@ class loansSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Loans
-        fields = ['id', 'amount', 'status', 'user', 'created_at', 'updated_at']
+        fields = ['id', 'amount', 'status', 'user', 'created_at', 'updated_at', 'repayment']
         write_only_fields = ['amount']
 
     def create(self, validated_data):
@@ -73,7 +73,7 @@ class LoanRepaymentsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LoanRepayment
-        fields = ['id', 'amount']
+        fields = ['id', 'amount', 'created_at']
 
     def create(self, validated_data):
         return LoanRepayment.objects.create(**validated_data)
